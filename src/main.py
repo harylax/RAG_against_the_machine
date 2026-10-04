@@ -1,5 +1,5 @@
 from pathlib import Path
-from chunk import MarkdownChunks
+from chunk import MarkdownChunks, PythonFilesChunks
 from typing import Any
 import json
 
@@ -29,12 +29,17 @@ def get_file_content(path_to_file: str) -> dict[Path, str]:
 
 def main() -> None:
     md_files, py_files = get_vllm_files_content('data/raw/vllm-0.10.1')
-    md_chunks: MarkdownChunks = MarkdownChunks(1000)
+    # md_chunks: MarkdownChunks = MarkdownChunks()
     # md_chunks.process_chunks(md_files)
-    md_chunks.process_chunks(
-        get_file_content('data/raw/vllm-0.10.1/README.md')
-        )
-    for chunk in md_chunks.processed_chunks:
+    # md_chunks.process_chunks(
+    #     get_file_content('data/raw/vllm-0.10.1/README.md')
+    #     )
+    py_chunks: PythonFilesChunks = PythonFilesChunks()
+    py_chunks.process_chunks(py_files)
+    # py_chunks.process_chunks(
+    #     get_file_content('data/raw/vllm-0.10.1/setup.py')
+    #     )
+    for chunk in py_chunks.processed_chunks:
         to_print: dict[str, Any] = {
             "id": chunk.id,
             "file_path": str(chunk.file_path),
