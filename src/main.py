@@ -1,5 +1,7 @@
 from pathlib import Path
-from .chunk import Chunk
+from chunk import MarkdownChunks
+from typing import Any
+import json
 
 
 def get_vllm_files_content(path_to_vllm: str) -> tuple[
@@ -19,33 +21,28 @@ def get_vllm_files_content(path_to_vllm: str) -> tuple[
     return (md_files, py_files)
 
 
-def markdown_chunking(files: dict[Path, str]) -> list[Chunk]:
-    ...
-
-
-def python_code_chunking(files: dict[Path, str]) -> list[Chunk]:
-    ...
+def get_file_content(path_to_file: str) -> dict[Path, str]:
+    path: Path = Path(path_to_file)
+    with open(path) as f:
+        return {path: f.read()}
 
 
 def main() -> None:
     md_files, py_files = get_vllm_files_content('data/raw/vllm-0.10.1')
-    count = 0
-    for path, text in md_files.items():
-        print(
-            f"\033[35mpath: {path}\033[0m\n"
-            f"text:\n\t{text}\n"
+    md_chunks: MarkdownChunks = MarkdownChunks(1000)
+    # md_chunks.process_chunks(md_files)
+    md_chunks.process_chunks(
+        get_file_content('data/raw/vllm-0.10.1/README.md')
         )
-        count += 1
-    print(f"\033[31m{count}\033[0m")
-    print()
-    count = 0
-    for path, text in py_files.items():
-        print(
-            f"\033[35mpath: {path}\033[0m\n"
-            f"text:\n\t{text}\n"
-        )
-        count += 1
-    print(f"\033[31m{count}\033[0m")
+    for chunk in md_chunks.processed_chunks:
+        to_print: dict[str, Any] = {
+            "id": chunk.id,
+            "file_path": str(chunk.file_path),
+            "first_character_index": chunk.first_character_index,
+            "last_character_index": chunk.last_character_index,
+            "text": chunk.text
+        }
+        print(json.dumps(to_print, indent=2))
 
 
 if __name__ == "__main__":
