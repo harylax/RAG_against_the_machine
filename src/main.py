@@ -34,11 +34,11 @@ def main() -> None:
     # md_chunks.process_chunks(
     #     get_file_content('data/raw/vllm-0.10.1/README.md')
     #     )
-    py_chunks: PythonFilesChunks = PythonFilesChunks()
-    py_chunks.process_chunks(py_files)
-    # py_chunks.process_chunks(
-    #     get_file_content('data/raw/vllm-0.10.1/setup.py')
-    #     )
+    py_chunks: PythonFilesChunks = PythonFilesChunks(500)
+    # py_chunks.process_chunks(py_files)
+    py_chunks.process_chunks(
+        get_file_content('data/raw/vllm-0.10.1/setup.py')
+        )
     for chunk in py_chunks.processed_chunks:
         to_print: dict[str, Any] = {
             "id": chunk.id,
