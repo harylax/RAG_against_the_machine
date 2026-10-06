@@ -192,11 +192,13 @@ class PythonFilesChunks(Chunks):
                 end = nodes[-1].lineno
             res.append(''.join(lines[start:end]))
             start = end
-        left: str = ''.join(lines[start:])
-        if len(res[-1]) + len(left) <= self.max_chunk_size:
-            res[-1] += left
+        tail: str = ''.join(lines[start:])
+        if not res:
+            return [tail]
+        if len(res[-1]) + len(tail) <= self.max_chunk_size:
+            res[-1] += tail
         else:
-            res.append(left)
+            res.append(tail)
         return res
 
     def part_at_consecutive_newlines(self, text: str) -> list[str]:
