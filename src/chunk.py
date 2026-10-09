@@ -10,17 +10,18 @@ MIN_CHUNK_SIZE = 200
 class Chunk:
     def __init__(
         self,
-        id: int,
+        id: int | None,
         file_path: Path,
         first_character_index: int,
         last_character_index: int,
         text: str
     ) -> None:
-        # self.id: int = id
+        self.id: int | None = None
         self.file_path: Path = file_path
         self.first_character_index: int = first_character_index
         self.last_character_index: int = last_character_index
         self.text: str = text
+        self.tokens: list[str] = []
 
 
 class Chunks(ABC):
@@ -203,7 +204,7 @@ class MarkdownChunks(Chunks):
             end = start + len(block)
             res.append(
                 Chunk(
-                    id, file_path, start, end - 1, text[start:end]
+                    None, file_path, start, end - 1, text[start:end]
                     )
                 )
             id += 1
@@ -333,7 +334,7 @@ class PythonFilesChunks(Chunks):
             end = start + len(block)
             res.append(
                 Chunk(
-                    id, file_path, start, end - 1, text[start:end]
+                    None, file_path, start, end - 1, text[start:end]
                     )
                 )
             id += 1
@@ -364,27 +365,33 @@ def get_files_content(path: str) -> tuple[
     return (md_files, py_files)
 
 
-def write_processed_chunks(
+def process_all_chunks(
         read_path: str,
-        save_path: str,
         max_chunk_size: int = 2000
-        ) -> None:
+        ) -> list[Chunk]:
     md_files, py_files = get_files_content(read_path)
-    path: Path = Path(save_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
 
     md_chunks: MarkdownChunks = MarkdownChunks(max_chunk_size)
+
     py_chunks: PythonFilesChunks = PythonFilesChunks(max_chunk_size)
 
     md_chunks.process_chunks(md_files)
     py_chunks.process_chunks(py_files)
 
+    return md_chunks.processed_chunks + py_chunks.processed_chunks
+
+
+def write_processed_chunks(
+        all_chunks: list[Chunk],
+        save_path: str
+        ) -> None:
+    path: Path = Path(save_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
     data: list[dict[str, Any]] = []
 
-    all_chunks: list[Chunk] = \
-        md_chunks.processed_chunks + py_chunks.processed_chunks
-
     for i, chunk in enumerate(all_chunks):
+        chunk.id = i
         data.append({
             "id": i,
             "file_path": str(chunk.file_path),
