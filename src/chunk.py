@@ -1,8 +1,7 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
 import ast
-from typing import Any
-import json
+
 
 MIN_CHUNK_SIZE = 200
 
@@ -379,32 +378,6 @@ def process_all_chunks(
     py_chunks.process_chunks(py_files)
 
     return md_chunks.processed_chunks + py_chunks.processed_chunks
-
-
-def write_processed_chunks(
-        all_chunks: list[Chunk],
-        save_path: str
-        ) -> None:
-    path: Path = Path(save_path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-
-    data: list[dict[str, Any]] = []
-
-    for i, chunk in enumerate(all_chunks):
-        chunk.id = i
-        data.append({
-            "id": i,
-            "file_path": str(chunk.file_path),
-            "first_character_index": chunk.first_character_index,
-            "last_character_index": chunk.last_character_index,
-            "text": chunk.text
-        })
-    try:
-        with open(path, 'w') as f:
-            json.dump(data, f, indent=2)
-    except OSError as err:
-        print(f"\033[31m{err.__class__.__name__}: {err}\033[0m")
-        exit(1)
 
 
 if __name__ == "__main__":
