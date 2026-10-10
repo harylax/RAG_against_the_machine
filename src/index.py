@@ -3,15 +3,15 @@ from .chunk import process_all_chunks, Chunk
 from pathlib import Path
 from typing import Any
 import json
-from .bm25 import BM25
+from .utils import tokenize
 from .models import MinimalSource
 
 
 class Indexer:
     def __init__(
             self,
-            corpus_path: str = 'data/raw/vllm-0.10.1',
             max_chunk_size: int = 2000,
+            corpus_path: str = 'data/raw/vllm-0.10.1',
             index_path: str = 'data/processed/index.json'
             ) -> None:
         self.max_chunk_size: int = max_chunk_size
@@ -35,7 +35,7 @@ class Indexer:
                 ) for chunk in self.chunks
             ]
             self.tokens: list[list[str]] = [
-                BM25.tokenize(chunk.text) for chunk in self.chunks
+                tokenize(chunk.text) for chunk in self.chunks
                 ]
             self.term_freqs: list[dict[str, int]] = [
                 dict(Counter(token)) for token in self.tokens
@@ -123,7 +123,3 @@ class Indexer:
         if self.check_corpus(corpus_path) != old:
             return True
         return False
-
-
-if __name__ == "__main__":
-    idx: Indexer = Indexer('data/raw/vllm-0.10.1', 2000)

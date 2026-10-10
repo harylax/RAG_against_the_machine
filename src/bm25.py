@@ -1,9 +1,8 @@
-import re
 import json
 from .models import MinimalSource
 from typing import Any
 from math import log
-from pathlib import Path
+from .utils import tokenize
 
 
 class BM25:
@@ -11,19 +10,6 @@ class BM25:
         self.k1: float = 1.5
         self.b: float = 0.75
         self.load(index_path)
-
-    @staticmethod
-    def tokenize(text: str) -> list[str]:
-        res: list[str] = re.findall(r"[A-Za-z0-9_]+", text)
-        extra: list[str] = []
-        for s in res:
-            parts: list[
-                str
-                ] = re.findall(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+", s)
-            if len(parts) > 1:
-                extra.extend(parts)
-        res.extend(extra)
-        return [s.lower() for s in res]
 
     def load(self, index_path: str) -> None:
         try:
@@ -72,7 +58,7 @@ class BM25:
         return sum(scores)
 
     def get_scores(self, query: str) -> dict[int, float]:
-        query_tokens: list[str] = self.tokenize(query)
+        query_tokens: list[str] = tokenize(query)
         return {i: self.score(query_tokens, i) for i in range(self.n_docs)}
 
     def get_top_k(self, query: str, k: int = 5) -> list[tuple[int, float]]:
@@ -82,14 +68,5 @@ class BM25:
             )
         return [score for score in top[:k] if score[1] > 0]
 
-    @staticmethod
-    def read_chunk_text(source: MinimalSource) -> str:
-        path: Path = Path(source.file_path)
-        try:
-            with open(path) as f:
-                i: int = source.first_character_index
-                j: int = source.last_character_index + 1
-                return f.read()[i:j]
-        except OSError as err:
-            print(f"{err.__class__.__name__}: {err}")
-            return ''
+    def get_top_k_sources(self, query: str, k: int = 5) -> list[MinimalSource]:
+        return [self.sources[i] for i, _ in self.get_top_k(query, k)]
