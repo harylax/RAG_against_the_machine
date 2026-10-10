@@ -341,7 +341,7 @@ class PythonFilesChunks(Chunks):
         return res
 
 
-def get_files_content(path: str) -> tuple[
+def get_files_content(path: str = 'data/raw/vllm-0.10.1') -> tuple[
     dict[Path, str], dict[Path, str]
         ]:
     md_files: dict[Path, str] = {}
@@ -365,7 +365,7 @@ def get_files_content(path: str) -> tuple[
 
 
 def process_all_chunks(
-        read_path: str,
+        read_path: str = 'data/raw/vllm-0.10.1',
         max_chunk_size: int = 2000
         ) -> list[Chunk]:
     md_files, py_files = get_files_content(read_path)
