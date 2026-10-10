@@ -80,7 +80,7 @@ class BM25:
         top: list[tuple[int, float]] = sorted(
             scores.items(), key=lambda x: x[1], reverse=True
             )
-        return top[:k]
+        return [score for score in top[:k] if score[1] > 0]
 
     @staticmethod
     def read_chunk_text(source: MinimalSource) -> str:
