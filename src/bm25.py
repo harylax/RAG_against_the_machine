@@ -66,7 +66,7 @@ class BM25:
         top: list[tuple[int, float]] = sorted(
             scores.items(), key=lambda x: x[1], reverse=True
             )
-        return [score for score in top[:k] if score[1] > 0]
+        return [score for score in top[:k] if score[1] > 0.0]
 
     def get_top_k_sources(self, query: str, k: int = 5) -> list[MinimalSource]:
         return [self.sources[i] for i, _ in self.get_top_k(query, k)]
