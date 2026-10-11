@@ -3,6 +3,13 @@ import uuid
 from typing import List
 
 
+class Chunk(BaseModel):
+    file_path: str
+    first_character_index: int
+    last_character_index: int
+    text: str
+
+
 class MinimalSource(BaseModel):
     file_path: str
     first_character_index: int
@@ -17,6 +24,10 @@ class UnansweredQuestion(BaseModel):
 class AnsweredQuestion(UnansweredQuestion):
     sources: List[MinimalSource]
     answer: str
+
+
+class RagDataset(BaseModel):
+    rag_questions: List[AnsweredQuestion | UnansweredQuestion]
 
 
 class MinimalSearchResults(BaseModel):

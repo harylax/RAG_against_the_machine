@@ -24,5 +24,5 @@ def read_chunk_text(source: MinimalSource) -> str:
             j: int = source.last_character_index + 1
             return f.read()[i:j]
     except OSError as err:
-        print(f"{err.__class__.__name__}: {err}")
+        print(f"\033[31m{err.__class__.__name__}: {err}\033[0m")
         return ''

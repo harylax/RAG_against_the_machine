@@ -1,26 +1,11 @@
 from pathlib import Path
 from abc import ABC, abstractmethod
 import ast
+from tqdm import tqdm  # type: ignore
+from .models import Chunk
 
 
 MIN_CHUNK_SIZE = 200
-
-
-class Chunk:
-    def __init__(
-        self,
-        id: int | None,
-        file_path: Path,
-        first_character_index: int,
-        last_character_index: int,
-        text: str
-    ) -> None:
-        self.id: int | None = None
-        self.file_path: Path = file_path
-        self.first_character_index: int = first_character_index
-        self.last_character_index: int = last_character_index
-        self.text: str = text
-        self.tokens: list[str] = []
 
 
 class Chunks(ABC):
@@ -39,24 +24,21 @@ class Chunks(ABC):
 
     def process_chunks(
             self,
-            files: dict[Path, str]
+            files: dict[Path, str],
+            desc: str = 'Chunking'
             ) -> None:
-        previous_id: int | None = None
-        for file_path, text in files.items():
-            # if self.processed_chunks:
-            #     previous_id = self.processed_chunks[-1].id
+        for file_path, text in tqdm(files.items(), desc=desc, unit=' file'):
             self.processed_chunks.extend(
                 self.divide_file_into_chunks(
-                    file_path, text, previous_id
+                    str(file_path), text
                     )
                 )
 
     @abstractmethod
     def divide_file_into_chunks(
             self,
-            file_path: Path,
-            text: str,
-            previous_id: int | None = None
+            file_path: str,
+            text: str
             ) -> list[Chunk]:
         pass
 
@@ -184,9 +166,8 @@ class MarkdownChunks(Chunks):
 
     def divide_file_into_chunks(
         self,
-        file_path: Path,
-        text: str,
-        previous_id: int | None = None
+        file_path: str,
+        text: str
             ) -> list[Chunk]:
         blocks: list[str] = self.split_in_sentences(text)
         blocks = self.split_at_space(blocks)
@@ -194,7 +175,6 @@ class MarkdownChunks(Chunks):
         blocks = self.merge_small_blocks(blocks)
         blocks = self.merge_blank_blocks(blocks)
         res: list[Chunk] = []
-        id: int = 0 if previous_id is None else previous_id + 1
         start: int = 0
         end: int = 0
         for block in blocks:
@@ -203,10 +183,12 @@ class MarkdownChunks(Chunks):
             end = start + len(block)
             res.append(
                 Chunk(
-                    None, file_path, start, end - 1, text[start:end]
+                    file_path=file_path,
+                    first_character_index=start,
+                    last_character_index=end - 1,
+                    text=text[start:end]
                     )
                 )
-            id += 1
             start = end
         return res
 
@@ -312,9 +294,8 @@ class PythonFilesChunks(Chunks):
 
     def divide_file_into_chunks(
             self,
-            file_path: Path,
-            text: str,
-            previous_id: int | None = None
+            file_path: str,
+            text: str
             ) -> list[Chunk]:
         blocks: list[str] = self.build_blocks(text)
         blocks = self.split_at_consecutive_newlines(blocks)
@@ -324,7 +305,6 @@ class PythonFilesChunks(Chunks):
         blocks = self.merge_small_blocks(blocks)
         blocks = self.merge_blank_blocks(blocks)
         res: list[Chunk] = []
-        id: int = 0 if previous_id is None else previous_id + 1
         start: int = 0
         end: int = 0
         for block in blocks:
@@ -333,10 +313,12 @@ class PythonFilesChunks(Chunks):
             end = start + len(block)
             res.append(
                 Chunk(
-                    None, file_path, start, end - 1, text[start:end]
+                    file_path=file_path,
+                    first_character_index=start,
+                    last_character_index=end - 1,
+                    text=text[start:end]
                     )
                 )
-            id += 1
             start = end
         return res
 
@@ -349,7 +331,7 @@ def get_files_content(path: str = 'data/raw/vllm-0.10.1') -> tuple[
 
     vllm: Path = Path(path)
     for file in vllm.rglob('*'):
-        if file.suffix == '.md':
+        if file.suffix in ('.md', '.txt'):
             try:
                 with open(file) as f:
                     md_files[file] = f.read()
@@ -374,8 +356,8 @@ def process_all_chunks(
 
     py_chunks: PythonFilesChunks = PythonFilesChunks(max_chunk_size)
 
-    md_chunks.process_chunks(md_files)
-    py_chunks.process_chunks(py_files)
+    md_chunks.process_chunks(md_files, 'Chunking markdown')
+    py_chunks.process_chunks(py_files, 'Chunking python code')
 
     return md_chunks.processed_chunks + py_chunks.processed_chunks
 
@@ -387,7 +369,7 @@ if __name__ == "__main__":
             content = f.read()
         py_chunk = PythonFilesChunks(x)
         for chunk in py_chunk.divide_file_into_chunks(
-            Path('data/raw/vllm-0.10.1/setup.py'),
+            'data/raw/vllm-0.10.1/setup.py',
             content
                 ):
             print(chunk.text)
@@ -399,7 +381,7 @@ if __name__ == "__main__":
             content = f.read()
         md_chunk = MarkdownChunks(x)
         for chunk in md_chunk.divide_file_into_chunks(
-            Path('data/raw/vllm-0.10.1/README.md'),
+            'data/raw/vllm-0.10.1/README.md',
             content
                 ):
             print(chunk.text)
@@ -411,7 +393,7 @@ if __name__ == "__main__":
             content = f.read()
         md_chunk = MarkdownChunks(x)
         chunks = md_chunk.divide_file_into_chunks(
-            Path('data/raw/vllm-0.10.1/README.md'),
+            'data/raw/vllm-0.10.1/README.md',
             content
         )
         assert ''.join(chunk.text for chunk in chunks) == content
@@ -423,7 +405,7 @@ if __name__ == "__main__":
             content = f.read()
         py_chunk = PythonFilesChunks(x)
         chunks = py_chunk.divide_file_into_chunks(
-            Path('data/raw/vllm-0.10.1/setup.py'),
+            'data/raw/vllm-0.10.1/setup.py',
             content
         )
         assert ''.join(chunk.text for chunk in chunks) == content

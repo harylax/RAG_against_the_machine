@@ -7,7 +7,7 @@ from .utils import tokenize
 
 class BM25:
     def __init__(self, index_path: str = 'data/processed/index.json'):
-        self.k1: float = 1.5
+        self.k1: float = 1.75
         self.b: float = 0.75
         self.load(index_path)
 
@@ -16,7 +16,8 @@ class BM25:
             with open(index_path) as f:
                 data: dict[str, Any] = json.load(f)
         except (OSError, json.JSONDecodeError) as err:
-            print(f"{err.__class__.__name__}: {err}")
+            print(f"\033[31m{err.__class__.__name__}: {err}")
+            print("No index found. Run: uv run python -m src index\033[0m")
             exit(1)
         self.sources = [MinimalSource(
             file_path=source['file_path'],
@@ -62,6 +63,8 @@ class BM25:
         return {i: self.score(query_tokens, i) for i in range(self.n_docs)}
 
     def get_top_k(self, query: str, k: int = 5) -> list[tuple[int, float]]:
+        if k <= 0:
+            return []
         scores: dict[int, float] = self.get_scores(query)
         top: list[tuple[int, float]] = sorted(
             scores.items(), key=lambda x: x[1], reverse=True
@@ -69,4 +72,6 @@ class BM25:
         return [score for score in top[:k] if score[1] > 0.0]
 
     def get_top_k_sources(self, query: str, k: int = 5) -> list[MinimalSource]:
+        if k <= 0:
+            return []
         return [self.sources[i] for i, _ in self.get_top_k(query, k)]

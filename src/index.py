@@ -1,10 +1,11 @@
 from collections import Counter
-from .chunk import process_all_chunks, Chunk
+from .chunk import process_all_chunks
 from pathlib import Path
 from typing import Any
 import json
 from .utils import tokenize
-from .models import MinimalSource
+from .models import Chunk, MinimalSource
+from tqdm import tqdm  # type: ignore
 
 
 class Indexer:
@@ -29,13 +30,18 @@ class Indexer:
                 )
             self.sources: list[MinimalSource] = [
                 MinimalSource(
-                    file_path=str(chunk.file_path),
+                    file_path=chunk.file_path,
                     first_character_index=chunk.first_character_index,
                     last_character_index=chunk.last_character_index
                 ) for chunk in self.chunks
             ]
             self.tokens: list[list[str]] = [
-                tokenize(chunk.text) for chunk in self.chunks
+                tokenize((chunk.text)) + tokenize(Path(chunk.file_path).stem)
+                for chunk in tqdm(
+                    self.chunks,
+                    desc='Tokenizing',
+                    unit=' chunk'
+                    )
                 ]
             self.term_freqs: list[dict[str, int]] = [
                 dict(Counter(token)) for token in self.tokens
@@ -50,6 +56,12 @@ class Indexer:
                 ) if self.n_docs else 0.0
             self.save(index_path)
             self.write_checker(corpus_path)
+            print(
+                f"Ingestion completed! Indexed {self.n_docs} "
+                f"chunks under data/processed"
+                )
+        else:
+            print("Index up to date under data/processed")
 
     def count_doc_frequency(self) -> dict[str, int]:
         res: dict[str, int] = {}
@@ -79,7 +91,7 @@ class Indexer:
             with open(path, 'w') as f:
                 json.dump(data, f, indent=2)
         except OSError as err:
-            print(f"{err.__class__.__name__}: {err}")
+            print(f"\033[31m{err.__class__.__name__}: {err}\033[0m")
 
     def check_corpus(
             self,
@@ -88,7 +100,7 @@ class Indexer:
         files: dict[str, Any] = {}
         path: Path = Path(corpus_path)
         for file in path.rglob('*'):
-            if file.suffix in ['.md', '.py']:
+            if file.suffix in ['.md', '.py', '.txt']:
                 stat: Any = file.stat()
                 files[str(file)] = [stat.st_mtime, stat.st_size]
         files['max_chunk_size'] = self.max_chunk_size
@@ -104,7 +116,7 @@ class Indexer:
             with open(checker_path, 'w') as f:
                 json.dump(self.check_corpus(corpus_path), f, indent=2)
         except OSError as err:
-            print(f"{err.__class__.__name__}: {err}")
+            print(f"\033[31m{err.__class__.__name__}: {err}\033[0m")
 
     def reindexation_needed(
             self,
