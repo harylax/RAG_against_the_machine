@@ -164,6 +164,18 @@ class MarkdownChunks(Chunks):
         blocks = self.split_at_chars(blocks, '! ')
         return self.split_at_chars(blocks, '? ')
 
+    def merge_small_blocks(self, blocks: list[str]) -> list[str]:
+        res: list[str] = []
+        for block in blocks:
+            if (
+                res and len(res[-1]) + len(block) <= self.max_chunk_size
+                and not block.lstrip().startswith('#')
+                    ):
+                res[-1] += block
+                continue
+            res.append(block)
+        return res
+
     def divide_file_into_chunks(
         self,
         file_path: str,
@@ -411,7 +423,7 @@ if __name__ == "__main__":
         assert ''.join(chunk.text for chunk in chunks) == content
         assert all(len(chunk.text) <= x for chunk in chunks)
 
-    # test_md(200)
+    test_md(1000)
     # test_no_loss_md(200)
     # test_py(200)
     # test_no_loss_py(200)
