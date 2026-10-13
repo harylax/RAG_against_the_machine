@@ -3,6 +3,7 @@ from .bm25 import BM25
 from .retrieve import Retriever
 from fire import Fire  # type: ignore
 from .models import MinimalSearchResults
+from .answer import Answer
 
 
 class CLI:
@@ -16,14 +17,14 @@ class CLI:
 
     def search(
             self,
-            question: str,
+            query: str,
             k: int = 5,
             question_id: str | None = None,
             index_path: str = 'data/processed/index.json'
             ) -> None:
         bm25: BM25 = BM25(index_path)
         res: MinimalSearchResults = Retriever(bm25).search(
-            question, question_id, k
+            query, question_id, k
             )
         for source in res.retrieved_sources:
             print(
@@ -43,6 +44,14 @@ class CLI:
             ) -> None:
         bm25: BM25 = BM25(index_path)
         Retriever(bm25).search_dataset(dataset_path, k, save_directory)
+
+    def answer(
+            self,
+            query: str,
+            k: int = 5,
+            index_path: str = 'data/processed/index.json'
+    ) -> None:
+        print(Answer(BM25(index_path)).answer(query, k))
 
 
 if __name__ == "__main__":
