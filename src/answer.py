@@ -30,7 +30,11 @@ class Answer:
         res += f'The question: "{question}"\n'
         return res
 
-    def answer(self, question: str, k: int = 5) -> str:
+    def answer(
+            self,
+            question: str,
+            k: int = 5
+            ) -> str:
         response: Any = chat(
             model=self.model,
             messages=[
@@ -47,6 +51,15 @@ class Answer:
                 }
             ],
             think=False,
+            stream=True,
             options={'temperature': 0, 'num_ctx': 4096, 'num_predict': 200}
         )
-        return response['message']['content']
+        print(f"\033[32m>>>Query: {question!r}\033[0m")
+        print("\033[33mAnswer: \033[0m", end='')
+        generated: str = ''
+        for token in response:
+            content: str = token['message']['content']
+            generated += content
+            print(f"\033[33m{content}\033[0m", end='', flush=True)
+        print()
+        return generated

@@ -5,7 +5,7 @@ from tqdm import tqdm  # type: ignore
 from .models import Chunk
 
 
-MIN_CHUNK_SIZE = 200
+MIN_CHUNK_SIZE = 250
 
 
 class Chunks(ABC):

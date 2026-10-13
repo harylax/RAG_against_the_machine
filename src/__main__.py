@@ -51,7 +51,7 @@ class CLI:
             k: int = 5,
             index_path: str = 'data/processed/index.json'
     ) -> None:
-        print(Answer(BM25(index_path)).answer(query, k))
+        Answer(BM25(index_path)).answer(query, k)
 
 
 if __name__ == "__main__":
