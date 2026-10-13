@@ -129,6 +129,11 @@ class Chunks(ABC):
 class MarkdownChunks(Chunks):
     def __init__(self, max_chunk_size: int = 2000) -> None:
         super().__init__(max_chunk_size)
+        self.titles: list[tuple[int, str]] = []
+
+    def get_title(self, lines: list[str], i: int) -> None:
+        start: int = len(''.join(lines[:i]))
+        self.titles.append((start, lines[i]))
 
     def divide_by_title(self, text: str) -> list[str]:
         if len(text) <= self.max_chunk_size:
@@ -139,6 +144,7 @@ class MarkdownChunks(Chunks):
         end: int = 0
         for i, line in enumerate(lines):
             if line.strip().startswith('#'):
+                self.get_title(lines, i)
                 end = i
                 blocks.append(lines[start:end])
                 start = end
@@ -193,12 +199,17 @@ class MarkdownChunks(Chunks):
             if not block:
                 continue
             end = start + len(block)
+            chunk_title: str | None = None
+            for title_start, title in self.titles:
+                if title_start <= start:
+                    chunk_title = title
             res.append(
                 Chunk(
                     file_path=file_path,
                     first_character_index=start,
                     last_character_index=end - 1,
-                    text=text[start:end]
+                    text=text[start:end],
+                    title=chunk_title
                     )
                 )
             start = end
@@ -328,7 +339,8 @@ class PythonFilesChunks(Chunks):
                     file_path=file_path,
                     first_character_index=start,
                     last_character_index=end - 1,
-                    text=text[start:end]
+                    text=text[start:end],
+                    title=None
                     )
                 )
             start = end
@@ -423,7 +435,22 @@ if __name__ == "__main__":
         assert ''.join(chunk.text for chunk in chunks) == content
         assert all(len(chunk.text) <= x for chunk in chunks)
 
-    test_md(1000)
+    # test_md(1000)
     # test_no_loss_md(200)
     # test_py(200)
     # test_no_loss_py(200)
+
+    def test_title(x: int = 2000) -> None:
+        content: str | None = None
+        with open('data/raw/vllm-0.10.1/README.md') as f:
+            content = f.read()
+        md_chunk = MarkdownChunks(x)
+        for chunk in md_chunk.divide_file_into_chunks(
+            'data/raw/vllm-0.10.1/README.md',
+            content
+                ):
+            print(f"\ttitle = {chunk.title}")
+            print(chunk.text)
+            print("----------------------------------------------------------")
+
+    test_title(200)

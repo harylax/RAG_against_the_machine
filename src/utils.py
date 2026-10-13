@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from .models import MinimalSource
+from .models import MinimalSource, Chunk
 
 
 def tokenize(text: str) -> list[str]:
@@ -26,3 +26,12 @@ def read_chunk_text(source: MinimalSource) -> str:
     except OSError as err:
         print(f"\033[31m{err.__class__.__name__}: {err}\033[0m")
         return ''
+
+
+def tokenize_chunk(chunk: Chunk) -> list[str]:
+    chunk_text_tokens: list[str] = tokenize(chunk.text)
+    chunk_path_tokens: list[str] = tokenize(Path(chunk.file_path).stem)
+    chunk_title_tokens: list[str] = (
+        tokenize(chunk.title) if chunk.title else []
+    )
+    return (chunk_text_tokens + chunk_path_tokens + chunk_title_tokens)

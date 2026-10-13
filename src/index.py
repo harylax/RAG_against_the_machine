@@ -3,7 +3,7 @@ from .chunk import process_all_chunks
 from pathlib import Path
 from typing import Any
 import json
-from .utils import tokenize
+from .utils import tokenize_chunk
 from .models import Chunk, MinimalSource
 from tqdm import tqdm  # type: ignore
 
@@ -36,8 +36,7 @@ class Indexer:
                 ) for chunk in self.chunks
             ]
             self.tokens: list[list[str]] = [
-                tokenize((chunk.text)) + tokenize(Path(chunk.file_path).stem)
-                for chunk in tqdm(
+                tokenize_chunk(chunk) for chunk in tqdm(
                     self.chunks,
                     desc='Tokenizing',
                     unit=' chunk'

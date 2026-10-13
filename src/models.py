@@ -8,6 +8,7 @@ class Chunk(BaseModel):
     first_character_index: int
     last_character_index: int
     text: str
+    title: str | None = Field(default=None)
 
 
 class MinimalSource(BaseModel):
