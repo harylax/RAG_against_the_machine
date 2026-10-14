@@ -4,6 +4,7 @@ from .retrieve import Retriever
 from fire import Fire  # type: ignore
 from .models import MinimalSearchResults
 from .answer import Answer
+from pathlib import Path
 
 
 class CLI:
@@ -42,7 +43,10 @@ class CLI:
                                    '/UnansweredQuestions'),
             index_path: str = 'data/processed/index.json'
             ) -> None:
-        bm25: BM25 = BM25(index_path)
+        if 'docs' in Path(dataset_path).name:
+            bm25: BM25 = BM25(index_path, True)
+        else:
+            bm25 = BM25(index_path, False)
         Retriever(bm25).search_dataset(dataset_path, k, save_directory)
 
     def answer(

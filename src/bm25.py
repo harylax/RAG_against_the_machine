@@ -3,12 +3,18 @@ from .models import MinimalSource
 from typing import Any
 from math import log
 from .utils import tokenize
+from pathlib import Path
 
 
 class BM25:
-    def __init__(self, index_path: str = 'data/processed/index.json'):
+    def __init__(
+            self,
+            index_path: str = 'data/processed/index.json',
+            prefer_docs: bool = False
+            ) -> None:
         self.k1: float = 1.75
         self.b: float = 0.75
+        self.prefer_docs: bool = prefer_docs
         self.load(index_path)
 
     def load(self, index_path: str) -> None:
@@ -56,6 +62,9 @@ class BM25:
         scores: list[float] = [
             self.score_term(token, doc_id) for token in query_tokens
             ]
+        if self.prefer_docs:
+            if Path(self.sources[doc_id].file_path).suffix == '.py':
+                return sum(scores) * 0.5
         return sum(scores)
 
     def get_scores(self, query: str) -> dict[int, float]:

@@ -1,5 +1,5 @@
 [project]
-name = "RAG_against_the_machine"
+name = "rag-against-the-machine"
 version = "0.1.0"
 description = "Retrieve context from source files to feed LLM"
 readme = "README.md"
