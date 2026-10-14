@@ -1,9 +1,14 @@
 from ollama import chat  # type: ignore
 from .bm25 import BM25
 from .retrieve import Retriever
-from .models import MinimalSearchResults, MinimalSource
+from .models import (
+    MinimalSearchResults, MinimalSource, StudentSearchResultsAndAnswer,
+    MinimalAnswer, StudentSearchResults
+)
+from pathlib import Path
 from .utils import read_chunk_text
 from typing import Any
+from tqdm import tqdm  # type: ignore
 
 
 class Answer:
@@ -33,7 +38,8 @@ class Answer:
     def answer(
             self,
             question: str,
-            k: int = 5
+            k: int = 5,
+            stream: bool = True
             ) -> str:
         response: Any = chat(
             model=self.model,
@@ -51,9 +57,11 @@ class Answer:
                 }
             ],
             think=False,
-            stream=True,
+            stream=stream,
             options={'temperature': 0, 'num_ctx': 4096, 'num_predict': 200}
         )
+        if not stream:
+            return response['message']['content']
         print(f"\033[32m>>>Query: {question!r}\033[0m")
         print("\033[33mAnswer: \033[0m", end='')
         generated: str = ''
@@ -63,3 +71,49 @@ class Answer:
             print(f"\033[33m{content}\033[0m", end='', flush=True)
         print()
         return generated
+
+    def answer_dataset(
+            self,
+            student_search_results_path: str,
+            save_directory: str
+    ) -> StudentSearchResultsAndAnswer:
+        res: list[MinimalAnswer] = []
+        search_path: Path = Path(student_search_results_path)
+        if not search_path.exists():
+            dataset_path: Path = Path(
+                'data/output/search_results/UnansweredQuestions'
+                ) / search_path.name
+            print(
+                "\033[31m"
+                f"student_search_result_path: '{student_search_results_path}' "
+                "not found.\nUsage: uv run python -m src search_dataset "
+                f"-dataset_path {dataset_path} -k <int> "
+                f"-save_directory {student_search_results_path}"
+                )
+            exit(1)
+        student_search_result: StudentSearchResults = \
+            StudentSearchResults.model_validate_json(search_path.read_text())
+        for search_res in tqdm(
+            student_search_result.search_results,
+            desc='Answering',
+            unit=' query'
+                ):
+            res.append(MinimalAnswer(
+                question_id=search_res.question_id,
+                question=search_res.question,
+                retrieved_sources=search_res.retrieved_sources,
+                answer=self.answer(search_res.question, 3, False)
+                ))
+        save_path: Path = Path(save_directory) / Path(
+            student_search_results_path
+            ).name
+        student_search_results_and_answer: StudentSearchResultsAndAnswer = \
+            StudentSearchResultsAndAnswer(
+                search_results=res,
+                k=student_search_result.k
+                )
+        save_path.parent.mkdir(parents=True, exist_ok=True)
+        save_path.write_text(
+            student_search_results_and_answer.model_dump_json(indent=2)
+            )
+        return student_search_results_and_answer

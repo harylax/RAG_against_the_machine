@@ -57,6 +57,22 @@ class CLI:
     ) -> None:
         Answer(BM25(index_path)).answer(query, k)
 
+    def answer_dataset(
+            self,
+            student_search_results_path: str = (
+                'data/output/search_results/'
+                'UnansweredQuestions/dataset_docs_public.json'
+                ),
+            save_directory: str = (
+                'data/output/search_results_and_answer/'
+                'UnsansweredQuestions/dataset_docs_public.json'
+                ),
+            index_path: str = 'data/processed/index.json'
+    ) -> None:
+        Answer(BM25(index_path)).answer_dataset(
+            student_search_results_path, save_directory
+            )
+
 
 if __name__ == "__main__":
     Fire(CLI)
