@@ -200,9 +200,10 @@ class MarkdownChunks(Chunks):
                 continue
             end = start + len(block)
             chunk_title: str | None = None
-            for title_start, title in self.titles:
-                if title_start <= start:
-                    chunk_title = title
+            if Path(file_path).suffix == '.md':
+                for title_start, title in self.titles:
+                    if title_start <= start:
+                        chunk_title = title
             res.append(
                 Chunk(
                     file_path=file_path,
